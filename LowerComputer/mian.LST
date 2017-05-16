@@ -1,0 +1,547 @@
+C51 COMPILER V9.00   MIAN                                                                  05/04/2017 23:21:01 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MIAN
+OBJECT MODULE PLACED IN mian.OBJ
+COMPILER INVOKED BY: D:\Program Files\Keil\C51\BIN\C51.EXE mian.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1                                                                                                                                                    
+   2          #include <reg52.h> 
+   3          #include <intrins.h>  
+   4          #include <math.h>    //Keil library    
+   5          #include <stdio.h>   //Keil library  
+   6          #include <LCD1602.h>   //Keil library  
+   7          #include<set.h>
+   8          //void tempconve();             
+   9          
+  10          /* void motor_start();     //µç»ú¿ªÊ¼×ª¶¯
+  11          void motor_stop();         //µç»úÍ£Ö¹×ª¶¯ */
+  12          
+  13          //#include<bee.h>
+  14          #define uchar unsigned char 
+  15          #define uint unsigned int 
+  16          //uchar Currenttemp=0;
+  17          uint sec=0;
+  18          uint i;
+  19          
+  20          uchar motorflag=1;
+  21          sbit LED1=P2^3;                   //Ï´ÒÂ×´Ì¬Ö¸Ê¾µÆ1
+  22          sbit LED2=P2^2;                    //Ï´ÒÂ×´Ì¬Ö¸Ê¾µÆ2
+  23          sbit LED3=P2^1;                   //Ï´ÒÂ×´Ì¬Ö¸Ê¾µÆ3
+  24          //sbit relay=P3^2;
+  25          
+  26          
+  27          
+  28          
+  29          //sbit bee=P3^0;
+  30          
+  31          /* sbit di=P3^7;
+  32          di=0;
+  33           */
+  34          //void tempconve();
+  35          void ledjudje();
+  36          //void beep();
+  37          
+  38          /* void motor_start()
+  39          {
+  40              
+  41                  IN1=0;
+  42                  IN2=1;                  //Ï´ÒÂ»úµç»ú×ª¶¯
+  43          
+  44          }
+  45          
+  46          void motor_stop()
+  47          {
+  48            
+  49                  IN1=0;
+  50                  IN2=0;                  //Ï´ÒÂ»úµç»úÍ£Ö¹×ª¶¯
+  51          
+  52          } */
+  53          void main()
+  54          {
+  55   1          TMOD=0X21;                            //¶¨Ê±Æ÷0Îª·½Ê½1£¬¶¨Ê±Æ÷1Îª·½Ê½2 ×Ô¶¯ÖØ×°
+C51 COMPILER V9.00   MIAN                                                                  05/04/2017 23:21:01 PAGE 2   
+
+  56   1              TH0  = (65535-5000)/256;                //¶¨Ê±Æ÷Áã×°³õÖµ
+  57   1              TL0  = (65535-5000)%256;                //¶¨Ê±Æ÷Áã×°³õÖµ
+  58   1              
+  59   1              
+  60   1              
+  61   1              //´®¿Ú³õÖµ
+  62   1              SCON=0x50; //ÉèÖÃ´®¿ÚÎª¹¤×÷·½Ê½1
+  63   1              PCON=0x00; //SMOD=0£¬32·ÖÆµ
+  64   1              TH1=0xfd;
+  65   1              TL1=0xfd; //²¨ÌØÂÊÎª9600 bit/s
+  66   1      /*      
+  67   1              //ÖÐ¶ÏÓÅÏÈ¼¶ÉèÖÃ
+  68   1              PS=1; //´®¿ÚÓÅÏÈ¼¶
+  69   1              PT1=1;
+  70   1              PT0=0; */
+  71   1              
+  72   1              washflag=0;
+  73   1              waterflag=0;
+  74   1              IN1=0;
+  75   1              IN2=0;  //³õÊ¼²»Ï´ÒÂ
+  76   1              SBUF=0xfb;
+  77   1              
+  78   1              yuyue_flag=0;
+  79   1              is_startkey_effect=1;
+  80   1              
+  81   1              //waterdoor=0;  //p1.7 ¸Ç°åÃÅÄ¬ÈÏ¹Ø±Õ
+  82   1              doorcloseflag=1;  //¸Ç°åÃÅÄ¬ÈÏ¹Ø±Õ
+  83   1              waterdoorkeypress=0;
+  84   1              
+  85   1              IE = 0x9a; //ES=1´®¿Ú½ÓÊÕÖÐ¶Ï,EA=1È«¾ÖÖÐ¶Ï,ET1=1,ET0=1
+  86   1              i=0;
+  87   1              TR0  = 1;                                               //¿ª¶¨Ê±Æ÷0
+  88   1              TR1  = 1;                                               //¿ª¶¨Ê±Æ÷1
+  89   1      
+  90   1      
+  91   1      
+  92   1              while (1)            //Ö÷Ñ­»·
+  93   1              {
+  94   2                      /* if (yuyue_flag==0)
+  95   2                              { */
+  96   2                      while(yuyue_flag==0)                                     
+  97   2                      {
+  98   3                              if(is_startkey_effect==1)
+  99   3                              {
+ 100   4                                      keyhandle();                      //°´¼ü¼ì²â¡¤
+ 101   4                                      timer0_serv();                    //¶¨Ê±É¨Ãè°´¼ü
+ 102   4                              }                     
+ 103   3                              ledjudje();               //LEDµÆËæ×ÅÏ´ÒÂµÄ¹ý³ÌÌø¶¯
+ 104   3                              
+ 105   3                              if(displaymode==0)              //ÏÔÊ¾È«Áã£¬Îª¿ª»úºóÏÔÊ¾
+ 106   3                              {
+ 107   4                                      Setdisplay(0);
+ 108   4                              }
+ 109   3                              else if(displaymode==1)                 //ÏÔÊ¾ÉèÖÃÏ´ÒÂÊ±¼ä
+ 110   3                              {
+ 111   4                                      Setdisplay(setmaxtemp);
+ 112   4                              }
+ 113   3                              else if(displaymode==2)                 //ÏÔÊ¾ÉèÖÃÍÑË®Ê±¼ä
+ 114   3                              {
+ 115   4                                      Setdisplay1(setmintemp);
+ 116   4                              }
+ 117   3                              
+C51 COMPILER V9.00   MIAN                                                                  05/04/2017 23:21:01 PAGE 3   
+
+ 118   3                              waterdoorkey();
+ 119   3                              
+ 120   3                              
+ 121   3                              
+ 122   3                              if(waterdoorkeypress_flag==1)
+ 123   3                              {       
+ 124   4                                      waterdoorkeypress_flag=0;
+ 125   4                                      i=(i+1)%2;   //i´ú±í°´ÏÂwaterdoorkey´ÎÊý£¬°´ÏÂÒ»´ÎÎª¿ªÃÅ£¬ÔÙ°´Ò»´ÎÎª¹ØÃÅ¡£³õÊ¼Îª0
+ 126   4                                      if(i==1)
+ 127   4                                      {
+ 128   5                                              //SBUF=0xff;//¸øÉÏÎ»»ú·¢0xff´ú±íÃÅÎ´¹Ø
+ 129   5                                              doorcloseflag=0;   //ÃÅ´ò¿ª
+ 130   5                                              IN1=0;
+ 131   5                                              IN2=0;
+ 132   5                                      }
+ 133   4                                      else
+ 134   4                                      {
+ 135   5                                              doorcloseflag=1;   //ÃÅ¹Ø±Õ
+ 136   5                                              IN1=0;
+ 137   5                                              IN2=1;
+ 138   5                                      }
+ 139   4                      
+ 140   4                              }
+ 141   3      
+ 142   3              
+ 143   3      
+ 144   3      
+ 145   3      /*                      if(waterdoor==1)                                        //ÍÑË®¸Ç°å´ò¿ª
+ 146   3                              {
+ 147   3                                      doorcloseflag=0;                                   //Í£Ö¹Ï´ÒÂ  doorcloseflag=1ÎªÃÅ¿ª
+ 148   3                                      IN1=0;
+ 149   3                                      IN2=0;
+ 150   3                              }
+ 151   3                              else
+ 152   3                              {
+ 153   3                                      doorcloseflag=1;
+ 154   3                              } 
+ 155   3                              
+ 156   3                               */
+ 157   3                              
+ 158   3                              
+ 159   3                      }
+ 160   2                              /* } */
+ 161   2                      if(yuyue_flag==1&&washflag==0&&waterflag==0)    //yuyue_flag=1´ú±íÓÐÔ¤Ô¼£¬ÇÒµ±Ç°Ã»ÓÐÒÂ·þÔÚÏ´
+ 162   2                      {
+ 163   3      /*                      doorcloseflag=1;  //¸Ç°åÃÅÄ¬ÈÏ¹Ø±Õ
+ 164   3                              waterdoorkeypress=0;
+ 165   3                              i=0;
+ 166   3                               */
+ 167   3                              
+ 168   3                              
+ 169   3                              is_baoliu_flag=1;
+ 170   3                              is_startkey_effect=0;
+ 171   3      
+ 172   3                              //DelayMS(10000);  //µÈ´ý10min£¬ÒÔ10sÎªÀýÑÝÊ¾
+ 173   3                              displaymode=1;
+ 174   3                              Setdisplay2();                  
+ 175   3                              
+ 176   3                              //while(yuyue_flag)
+ 177   3                                      
+ 178   3                              //ÉÏÎ»»ú×öµÈ´ý10min,Èç¹ûÃ»ÓÐµã¿ªÊ¼£¬¼´²»ÖÃis_baoliu_flag=0£¬Ìø³ö£¬ÖÐ¶ÏÖÃyuyue_flag=0
+ 179   3                              
+C51 COMPILER V9.00   MIAN                                                                  05/04/2017 23:21:01 PAGE 4   
+
+ 180   3                              
+ 181   3                              while (is_baoliu_flag==1)   //ÉÏÎ»»ú·¢ËÍ¿ªÊ¼Ï´ÒÂºóÖÃis_baoliu_flag=0£¬¿ªÊ¼Ï´ÒÂ
+ 182   3                              {
+ 183   4                                      //displaymode=1;
+ 184   4                                      Setdisplay2();  
+ 185   4                                      if(yuyue_flag==0)
+ 186   4                                      {
+ 187   5                                              /* IN1=0;
+ 188   5                                              IN2=0;  //µç»úÍ£Ö¹×ª¶¯
+ 189   5                                              washflag=0;
+ 190   5                                              waterflag=0;   //Ã²ËÆ¶àÓà£¬ÒòÎª´Ë×´Ì¬ÏÂ²»¿ÉÄÜÎªÔÚÏ´ */
+ 191   5                                              displaymode=0;
+ 192   5                                              is_startkey_effect=1;
+ 193   5                                              setmintemp=10;
+ 194   5                                              setmaxtemp=50;
+ 195   5                                              SBUF = 0xfa;
+ 196   5                                              //while(!TI);
+ 197   5                                              //TI = 0;     //·¢ËÍ0xfa¸øÉÏÎ»»ú´ú±íµ±Ç°Ï´ÒÂ»ú¿ÕÏÐ
+ 198   5                                              break;
+ 199   5                                      }                                       
+ 200   4                              };
+ 201   3      
+ 202   3                              
+ 203   3                              if (yuyue_flag==1)
+ 204   3                              {
+ 205   4                                      if (doorcloseflag==0) //ÃÅ¿ªÊ±
+ 206   4                                      {
+ 207   5                                              SBUF = 0xff;
+ 208   5                                              //while(!TI);
+ 209   5                                              //TI = 0;     //·¢ËÍ0xff¸øÉÏÎ»»ú´ú±íµ±Ç°ÃÅÎ´¹Ø
+ 210   5                                              while(doorcloseflag==0)//µ±ÃÅ¹Ø½øÈëÑ­»·
+ 211   5                                              {       
+ 212   6                                                      waterdoorkey();
+ 213   6                                                      if(waterdoorkeypress_flag==1)  //°´ÏÂwaterdoorkey
+ 214   6                                                      {
+ 215   7                                                              waterdoorkeypress_flag=0;
+ 216   7                                                              SBUF=0xf9;//¸øÉÏÎ»»ú·¢0xff´ú±íÃÅÒÑ¹Ø
+ 217   7                                                              doorcloseflag=1;  //³õÊ¼×ÜÊÇÃÅ¹Ø²ÅÏ´ÒÂ
+ 218   7                                                      }
+ 219   6                                              
+ 220   6                                              }
+ 221   5                                      }
+ 222   4                                      
+ 223   4                                      DelayMS(10);  //ÑÓ³Ù10msÎªÁËÊ¹setmaxtemp¡¢setmintemp¶¼ÉèÖÃºÃ
+ 224   4                                      washflag=1;
+ 225   4                                      
+ 226   4                                      SBUF = 0xfe;
+ 227   4                                      //while(!TI);
+ 228   4                                      //TI = 0;     //·¢ËÍ0xfe¸øÉÏÎ»»ú´ú±íµ±Ç°Ï´ÒÂ»úÓÐÒÂ·þÔÚÏ´
+ 229   4                                      
+ 230   4                                      IN1=0;
+ 231   4                                      IN2=1;                  //Ï´ÒÂ»úµç»ú×ª¶¯
+ 232   4                                      timeflag=5;
+ 233   4                                      halftime= setmaxtemp/2;
+ 234   4                                      i=0;
+ 235   4                                 
+ 236   4                                      while(yuyue_flag)   
+ 237   4                                      {
+ 238   5                                              ledjudje();
+ 239   5                                              if(displaymode==1)                      //ÏÔÊ¾Ï´ÒÂÊ±¼ä
+ 240   5                                              {
+ 241   6                                                      Setdisplay(setmaxtemp);
+C51 COMPILER V9.00   MIAN                                                                  05/04/2017 23:21:01 PAGE 5   
+
+ 242   6                                              }
+ 243   5                                              else if(displaymode==2)                 //ÏÔÊ¾ÍÑË®Ê±¼ä
+ 244   5                                              {
+ 245   6                                                      Setdisplay1(setmintemp);
+ 246   6                                              }
+ 247   5                                              
+ 248   5                                              
+ 249   5                                              waterdoorkey();
+ 250   5                                              if(waterdoorkeypress_flag==1)
+ 251   5                                              {
+ 252   6                                                      waterdoorkeypress_flag=0;
+ 253   6                                                      i=(i+1)%2;   //i´ú±í°´ÏÂwaterdoorkey´ÎÊý£¬°´ÏÂÒ»´ÎÎª¿ªÃÅ£¬ÔÙ°´Ò»´ÎÎª¹ØÃÅ¡£³õÊ¼Îª0
+ 254   6                                                      if(i==1)
+ 255   6                                                      {
+ 256   7                                                              SBUF=0xff;//¸øÉÏÎ»»ú·¢0xff´ú±íÃÅÎ´¹Ø
+ 257   7                                                              doorcloseflag=0;   //ÃÅ´ò¿ª
+ 258   7                                                              IN1=0;
+ 259   7                                                              IN2=0;
+ 260   7                                                      }
+ 261   6                                                      else
+ 262   6                                                      {
+ 263   7                                                              SBUF=0xf9;//¸øÉÏÎ»»ú·¢0xf9´ú±íÃÅÒÑ¹Ø
+ 264   7                                                              doorcloseflag=1;   //ÃÅ¹Ø±Õ
+ 265   7                                                              IN1=0;
+ 266   7                                                              IN2=1;
+ 267   7                                                      }
+ 268   6                                                      
+ 269   6                                              }
+ 270   5      
+ 271   5              
+ 272   5                                              
+ 273   5                                                              
+ 274   5      /*                                      if(waterdoor==0)  //°´ÏÂwaterdoorkey
+ 275   5                                              {
+ 276   5                                                      waterdoorkeypress=1;  //°´ÏÂwaterdoorkey
+ 277   5                                                      i=(i+1)%2;   //i´ú±í°´ÏÂwaterdoorkey´ÎÊý£¬°´ÏÂÒ»´ÎÎª¿ªÃÅ£¬ÔÙ°´Ò»´ÎÎª¹ØÃÅ¡£³õÊ¼Îª0
+ 278   5                                              }
+ 279   5      
+ 280   5                                               
+ 281   5                                              if(waterdoorkeypress==1)
+ 282   5                                              {
+ 283   5                                                      if(i==1)
+ 284   5                                                      {
+ 285   5                                                              doorcloseflag=0;   //ÃÅ´ò¿ª
+ 286   5                                                              IN1=0;
+ 287   5                                                              IN2=0;
+ 288   5                                                      }
+ 289   5                                                      else
+ 290   5                                                      {
+ 291   5                                                              doorcloseflag=1;   //ÃÅ¹Ø±Õ
+ 292   5                                                              IN1=0;
+ 293   5                                                              IN2=1;
+ 294   5                                                      }
+ 295   5                                                      waterdoorkeypress=0;
+ 296   5                                              }
+ 297   5                                              
+ 298   5                                               */
+ 299   5                                              
+ 300   5      /*                                      if(waterdoor==1)                                        //ÍÑË®¸Ç°å´ò¿ª
+ 301   5                                              {
+ 302   5                                                      doorcloseflag=0;                                   //Í£Ö¹Ï´ÒÂ
+ 303   5                                                      IN1=0;
+C51 COMPILER V9.00   MIAN                                                                  05/04/2017 23:21:01 PAGE 6   
+
+ 304   5                                                      IN2=0;
+ 305   5                                              }
+ 306   5                                              else
+ 307   5                                              {
+ 308   5                                                      doorcloseflag=1;
+ 309   5                                              }
+ 310   5                                               */
+ 311   5                                      }
+ 312   4                              }
+ 313   3                              
+ 314   3                      }
+ 315   2              }
+ 316   1              
+ 317   1       }
+ 318           void ledjudje()                                   //LEDµÆËæ×ÅÏ´ÒÂµÄ¹ý³ÌÌø¶¯
+ 319           {
+ 320   1               if(IN1==1)                                        
+ 321   1               {
+ 322   2                      LED1=0;
+ 323   2                      LED2=1;
+ 324   2                      LED3=1;
+ 325   2               }
+ 326   1               else if(IN2==1)
+ 327   1               {
+ 328   2                      LED1=1;
+ 329   2                      LED2=0;
+ 330   2                      LED3=1;
+ 331   2               }
+ 332   1               else if(IN1==0&&IN2==0)
+ 333   1               {
+ 334   2                      LED1=1;
+ 335   2                      LED2=1;
+ 336   2                      LED3=0;
+ 337   2               }
+ 338   1       
+ 339   1       }
+ 340          
+ 341          
+ 342          
+ 343          
+ 344          void DSY_Refresh() interrupt 1                    //¶¨Ê±Æ÷0ÖÐ¶Ï³ÌÐò£¬ÓÃÀ´¼ÆËãÏ´ÒÂÊ±¼ä£¬ÍÑË®Ê±¼ä
+ 345          {
+ 346   1          //ET0=0;  //×ÔÉíÖÐ¶Ï¹Øµô²»ÏìÓ¦,¿ÉÒÔ²»Ð´´Ë¾ä
+ 347   1              TH0  = (65535-1000)/256;
+ 348   1              TL0  = (65535-1000)%256;   //³õÊ¼×°65535-5000£¬¼´5ms£¬Ã¿´ÎInterruptºó×°³õÖµ65535-1000£¬¼´ÒÔºóÏµÍ³Ã¿1msÖÐ¶
+             -ÏÒ»´Î
+ 349   1              if (doorcloseflag==1)  //ÃÅ¹ØÊ±
+ 350   1              {
+ 351   2                      if(washflag==1)   //×¼±¸Ï´ÒÂ
+ 352   2                      {
+ 353   3                              is_startkey_effect=0;
+ 354   3                              sec++;     //³õÊ¼sec=0
+ 355   3                              if(sec>=1000)   //1ms*1000¼´Ã¿1sÎªÒ»ÖÜÆÚ
+ 356   3                              {
+ 357   4                                      sec=0;                  
+ 358   4                                      timeflag++;    //³õÊ¼timeflag=5,Ã¿Ãëtimeflag++
+ 359   4                                      
+ 360   4                                      if(motorflag==1)   //³õÊ¼motorflag=1
+ 361   4                                      {
+ 362   5                                         if(timeflag>=5)  //Ã¿5Ãëµç»ú·´×ª
+ 363   5                                         { 
+ 364   6                                               IN1=!IN1;
+C51 COMPILER V9.00   MIAN                                                                  05/04/2017 23:21:01 PAGE 7   
+
+ 365   6                                               IN2=!IN2;                      //Ï´ÒÂ»úµç»ú·´Ïò×ª¶¯
+ 366   6                                               timeflag=0;
+ 367   6                                         }
+ 368   5                                      }
+ 369   4                                       
+ 370   4              /*                      else   //motorflag==0,
+ 371   4                                      {
+ 372   4                                         if(timeflag>=7)    //Ã¿7Ãëµç»ú·´×ª
+ 373   4                                         { 
+ 374   4                                               IN1=!IN1;
+ 375   4                                               IN2=!IN2;                      //Ï´ÒÂ»úµç»ú·´Ïò×ª¶¯
+ 376   4                                               timeflag=0;
+ 377   4                                         }
+ 378   4                                      }
+ 379   4                                      */
+ 380   4                                      setmaxtemp--;
+ 381   4                                      
+ 382   4              /*                      if(halftime==setmaxtemp)
+ 383   4                                      {
+ 384   4                                              motorflag=0;             
+ 385   4                                      }  */
+ 386   4                                       
+ 387   4                                      if(setmaxtemp==0)   //Ï´ÒÂÊ±¼ä½áÊø
+ 388   4                                      {
+ 389   5                                              washflag=0;
+ 390   5                                              setmaxtemp=50;
+ 391   5                                              waterflag=1;    //¿ªÊ¼ÍÑË®±êÖ¾ÖÃ1
+ 392   5                                              sec=0;  
+ 393   5                                              displaymode=2;  //ÇÐ»»ÖÁÍÑË®Ê±¼äÏÔÊ¾Ä£Ê½
+ 394   5                                              //waterflag=0; ´íÎó¾ä×Ó
+ 395   5                                              IN1=0;
+ 396   5                                              IN2=0;
+ 397   5                                      }
+ 398   4                        
+ 399   4                              }
+ 400   3                      }
+ 401   2                      
+ 402   2                      if(waterflag==1)   //¿ªÊ¼ÍÑË®
+ 403   2                      {
+ 404   3                              if(doorcloseflag==1)  //ÃÅ¹ØÊ±
+ 405   3                              {
+ 406   4                                      sec++; //secÔÚsetmaxtemp==0Ê±ºòÒÑ¾­ÖÃ0
+ 407   4                                      IN1=0;
+ 408   4                                      IN2=1;   //Ò»Ö±Õý×ª
+ 409   4                                      if(sec>=1000)  //Ã¿Ãë
+ 410   4                                      {
+ 411   5                                        sec=0;
+ 412   5                                        setmintemp--;
+ 413   5                                        
+ 414   5                                         if(setmintemp==0)
+ 415   5                                              {
+ 416   6                                                      waterflag=0;
+ 417   6                                                      setmintemp=10;
+ 418   6                                                      sec=0;
+ 419   6                                                      IN1=0;
+ 420   6                                                      IN2=0;
+ 421   6                                                      DelayMS(1000);// µÈ´ý1s
+ 422   6                                                      displaymode=0;  //ÇÐ»»ÖÁ¿ªÊ¼ÏÔÊ¾Ä£Ê½£¬´ËÊ±Ó¦¸ÃÈ«Îª0
+ 423   6                                                      
+ 424   6                                                      is_baoliu_flag=0;   //´Ë¾ä¿É²»Ð´
+ 425   6                                                      is_startkey_effect=1;
+ 426   6                                                      //beep(); beep´ú±íÕû¸öÏ´ÒÂ¹ý³Ì½áÊø
+C51 COMPILER V9.00   MIAN                                                                  05/04/2017 23:21:01 PAGE 8   
+
+ 427   6                                                      if (yuyue_flag==1)
+ 428   6                                                              SBUF = 0xfd;  //Ô¤Ô¼µÄ½áÊøÏ´ÒÂ
+ 429   6                                                      else 
+ 430   6                                                              SBUF = 0xfb;  //·ÇÔ¤Ô¼µÄ½áÊøÏ´ÒÂ
+ 431   6                                                      yuyue_flag=0;
+ 432   6                                                      //while(!TI);
+ 433   6                                                      //TI = 0;     //·¢ËÍ0x55¸øÉÏÎ»»ú´ú±íµ±Ç°Ï´ÒÂ»ú¿ÕÏÐ
+ 434   6                                              }
+ 435   5                                      }         
+ 436   4                              }
+ 437   3                      }
+ 438   2              }
+ 439   1              //ET0=1;
+ 440   1      }
+ 441          
+ 442          /* void beep()                                                                          
+ 443          {
+ 444                  uchar i,j;
+ 445                  for(i=0;i<100;i++)
+ 446                  {
+ 447                       bee=0;
+ 448                           DelayMS(50);
+ 449                           bee=1;
+ 450                          DelayMS(50);
+ 451                  }
+ 452          
+ 453          } */
+ 454          
+ 455          
+ 456          void uart() interrupt 4
+ 457          {
+ 458   1              //EA=0;
+ 459   1              unsigned char temp;          //¶¨ÒåÁÙÊ±±äÁ¿ 
+ 460   1              if(RI)                        //ÅÐ¶ÏÊÇ½ÓÊÕÖÐ¶Ï²úÉú
+ 461   1          {
+ 462   2                      RI=0;                //±êÖ¾Î»ÇåÁã
+ 463   2                      if (washflag==0&&waterflag==0)   //µ±Ç°Ã»ÓÐÏ´ÒÂ
+ 464   2                      {
+ 465   3                              temp=SBUF;                 //¶ÁÈë»º³åÇøµÄÖµ
+ 466   3                              if (temp==0xff)  //½ÓÊÕµ½ÉÏÎ»»úÔ¤Ô¼À´ÁÙÐÅºÅ0xff
+ 467   3                              {
+ 468   4                                      yuyue_flag=1;
+ 469   4                              }
+ 470   3                              else if (temp==0xfe)  //½ÓÊÕµ½ÉÏÎ»»ú³¬Ê±¡¢È¡ÏûÔ¤Ô¼(¡¢ÖÐÍ¾ÖÐ¶ÏÏ´ÒÂ)ÐÅºÅ0x¡£Ö®Ç°´íÎóÐ´³É0xf8<temp<0xff£¡£
+             -¡£¡£¡
+ 471   3                              {
+ 472   4                                      yuyue_flag=0;
+ 473   4                              }
+ 474   3                              else if(temp==0xfb)
+ 475   3                              {
+ 476   4                                      startflag=1;         //ÉÏÎ»»ú·¢0xfb´ú±í¿ÉÒÔÏ´ÒÂ£¬ÊÖ¶¯ÉèÖÃÏ´ÒÂµÄ½áÊøÊ±¼äºÍËûÈËÔ¤Ô¼¿ªÊ¼Ê±¼ä³åÍ»
+ 477   4                              }       
+ 478   3                              else if(temp==0xfa)
+ 479   3                              {
+ 480   4                                      startflag=0;         //ÉÏÎ»»ú·¢0xfa´ú±íerrorÐÅºÅ£¬ÊÖ¶¯ÉèÖÃÏ´ÒÂµÄ½áÊøÊ±¼äºÍËûÈËÔ¤Ô¼¿ªÊ¼Ê±¼ä³åÍ»
+ 481   4                              }
+ 482   3                              else  //·¢ËÍµÄÎªÊ±¼äÉèÖÃÖ¡£¬±ØÐëÎªÁ¬ÐøÁ½Ö¡£¬ÖÐ¼ädelayÓÉÉÏÎ»»úÍê³É
+ 483   3                              {
+ 484   4                                      if(temp<128)   //Ï´ÒÂÊ±¼ä×î³¤ÉèÖÃ120min£¬ÐÅºÅÎªÒÔ0¿ªÍ·£¬ºóÃæ7Î»ÎªÊ±¼ä
+ 485   4                                      {setmaxtemp=temp;}
+ 486   4                                      else          //ÍÑË®Ê±¼ä×î³¤ÉèÖÃ120min£¬ÐÅºÅÎªÒÔ1¿ªÍ·£¬ºóÃæ7Î»ÎªÊ±¼ä
+ 487   4                                      {
+C51 COMPILER V9.00   MIAN                                                                  05/04/2017 23:21:01 PAGE 9   
+
+ 488   5                                              setmintemp=temp-128;
+ 489   5                                              is_baoliu_flag=0;
+ 490   5                                      }                       
+ 491   4                              }
+ 492   3                      }
+ 493   2              }
+ 494   1              
+ 495   1         if(TI)      {while(!TI);TI=0;}                  //Èç¹ûÊÇ·¢ËÍ±êÖ¾Î»£¬ÇåÁã
+ 496   1         
+ 497   1                      
+ 498   1              //EA=1;
+ 499   1      }
+ 500          
+ 501          
+ 502          
+ 503          
+ 504          
+ 505          
+ 506          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1422    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     41    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      6    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

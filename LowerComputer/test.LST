@@ -1,0 +1,280 @@
+C51 COMPILER V9.00   TEST                                                                  11/21/2012 15:21:51 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE TEST
+OBJECT MODULE PLACED IN test.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE test.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1                                                                                                                                                    
+   2          #include <reg52.h> 
+   3          #include <intrins.h>  
+   4          #include <math.h>    //Keil library    
+   5          #include <stdio.h>   //Keil library  
+   6          //#include <DS18B20.h>   //Keil library  
+   7          #define uchar unsigned char 
+   8          #define uint unsigned int 
+   9          #define      LCD_DB        P0 
+  10          sbit         LCD_RS=P2^3;   //P2^0是p2.0的意思；LCD_RS 
+  11          sbit         LCD_RW=P2^2;   //P2^1是p2.1的意思 
+  12          sbit         LCD_E=P2^1;    //P2^2是p2.2的意思 
+  13          
+  14          
+  15          sbit DQ =P2^0;   //定义通信端口
+  16          uchar disp[6];      //待显示的数据，高3位整数部分，低1位小数部分
+  17          //延时函数
+  18          void delay(unsigned int i)
+  19          {
+  20   1           while(i--);
+  21   1          
+  22   1      }
+  23          //初始化函数
+  24          Init_DS18B20(void)
+  25          {
+  26   1       uchar x=0;
+  27   1       DQ = 1;    //DQ复位
+  28   1       delay(8);  //稍做延时
+  29   1       DQ = 0;    //单片机将DQ拉低
+  30   1       delay(80); //精确延时 大于 480us
+  31   1       DQ = 1;    //拉高总线
+  32   1       delay(14);
+  33   1       x=DQ;      //稍做延时后 如果x=0则初始化成功 x=1则初始化失败
+  34   1       delay(20);
+  35   1      }
+  36          //读一个字节
+  37          ReadOneChar(void)
+  38          {
+  39   1      uchar i=0;
+  40   1      uchar dat = 0;
+  41   1      for (i=8;i>0;i--)
+  42   1       {
+  43   2              DQ = 0; // 给脉冲信号
+  44   2              dat>>=1;
+  45   2              DQ = 1; // 给脉冲信号
+  46   2              if(DQ)
+  47   2          dat|=0x80;
+  48   2              delay(4);
+  49   2       }
+  50   1       return(dat);
+  51   1      }
+  52          //写一个字节
+  53          WriteOneChar(unsigned char dat)
+  54          {
+  55   1       unsigned char i=0;
+C51 COMPILER V9.00   TEST                                                                  11/21/2012 15:21:51 PAGE 2   
+
+  56   1       for (i=8; i>0; i--)
+  57   1       {
+  58   2        DQ = 0;
+  59   2        DQ = dat&0x01;
+  60   2        delay(5);
+  61   2        DQ = 1;
+  62   2        dat>>=1;
+  63   2       }
+  64   1      delay(4);
+  65   1      }
+  66          //读取温度
+  67          void ReadTemperature(void)
+  68          {
+  69   1      uchar a=0,temp;
+  70   1      uchar b=0;
+  71   1      Init_DS18B20();
+  72   1      WriteOneChar(0xCC); // 跳过读序号列号的操作
+  73   1      WriteOneChar(0x44); // 启动温度转换
+  74   1      Init_DS18B20();
+  75   1      WriteOneChar(0xCC); //跳过读序号列号的操作
+  76   1      WriteOneChar(0xBE); //读取温度寄存器等（共可读9个寄存器） 前两个就是温度
+  77   1      a=ReadOneChar();   //读取温度值低位
+  78   1      b=ReadOneChar();   //读取温度值高位
+  79   1      temp=b;
+  80   1      temp&=0xf0;
+  81   1      if(temp==0)            //正温
+  82   1      {
+  83   2       disp[0]=((b<<4)|(a>>4))/100+'0';
+  84   2       disp[1]=(((b<<4)|(a>>4))%100)/10+'0';
+  85   2       disp[2]=(((b<<4)|(a>>4))%100)%10+'0';
+  86   2       disp[3]='.';
+  87   2       disp[4]=((a&0x0f)*625)/1000+'0';
+  88   2      }
+  89   1      else                            //负温
+  90   1      {
+  91   2      if(a==0)
+  92   2      {
+  93   3      a=~a+1;
+  94   3      b=~b+1; 
+  95   3      }
+  96   2      else
+  97   2      {                                  
+  98   3      a=~a+1;
+  99   3      b=~b;
+ 100   3      }
+ 101   2      disp[0]='-';
+ 102   2      disp[1]=((b<<4)|(a>>4))/10+'0';
+ 103   2      disp[2]=((b<<4)|(a>>4))%10+'0';
+ 104   2      disp[3]='.';
+ 105   2      disp[4]=((a&0x0f)*625)/1000+'0';
+ 106   2      }
+ 107   1      }
+ 108          
+ 109          /******定义函数****************/ 
+ 110          
+ 111          void LCD_init(void);                          //初始化函数 
+ 112          void LCD_write_command(uchar command);        //写指令函数 
+ 113          void LCD_write_data(uchar dat);               //写数据函数 
+ 114          void LCD_disp_char(uchar x,uchar y,uchar dat);//在某个屏幕位置上显示一个字符,X（0-15),y(1-2) 
+ 115          void LCD_disp_str(uchar x,uchar y,uchar *str); //LCD1602显示字符串函数 
+ 116          void delay_n10us(uint n);                     //延时函数 
+ 117          
+C51 COMPILER V9.00   TEST                                                                  11/21/2012 15:21:51 PAGE 3   
+
+ 118          /*--------------------------------------  
+ 119          ;模块名称:LCD_init();  
+ 120          
+ 121          ;-------------------------------------*/  
+ 122          void LCD_init(void) 
+ 123          { 
+ 124   1              delay_n10us(10); 
+ 125   1              LCD_write_command(0x38);//设置8位格式，2行，5x7 
+ 126   1              delay_n10us(10); 
+ 127   1              LCD_write_command(0x0c);//整体显示，关光标，不闪烁 
+ 128   1              delay_n10us(10); 
+ 129   1              LCD_write_command(0x06);//设定输入方式，增量不移位 
+ 130   1              delay_n10us(10); 
+ 131   1              LCD_write_command(0x01);//清除屏幕显示 
+ 132   1              delay_n10us(100);       //延时清屏，延时函数，延时约n个10us 
+ 133   1      } 
+ 134          
+ 135          
+ 136          /*--------------------------------------  
+ 137          ;模块名称:LCD_write_command();  
+ 138          ;功    能:LCD1602写指令函数  
+ 139          
+ 140          ;-------------------------------------*/  
+ 141          void LCD_write_command(uchar dat) 
+ 142          { 
+ 143   1              delay_n10us(10); 
+ 144   1              LCD_RS=0;         //指令 
+ 145   1              LCD_RW=0;         //写入 
+ 146   1              LCD_E=1;          //允许 
+ 147   1              LCD_DB=dat; 
+ 148   1              delay_n10us(10);  //实践证明，我的LCD1602上，用for循环1次就能完成普通写指令。 
+ 149   1              LCD_E=0; 
+ 150   1              delay_n10us(10);  //实践证明，我的LCD1602上，用for循环1次就能完成普通写指令。 
+ 151   1      } 
+ 152          
+ 153          
+ 154          /*--------------------------------------  
+ 155          ;模块名称:LCD_write_data();  
+ 156          ;功    能:LCD1602写数据函数  
+ 157          
+ 158          ;-------------------------------------*/ 
+ 159          void LCD_write_data(uchar dat) 
+ 160          { 
+ 161   1              delay_n10us(10); 
+ 162   1              LCD_RS=1;          //数据 
+ 163   1              LCD_RW=0;          //写入 
+ 164   1              LCD_E=1;           //允许 
+ 165   1              LCD_DB=dat; 
+ 166   1              delay_n10us(10); 
+ 167   1              LCD_E=0; 
+ 168   1              delay_n10us(10); 
+ 169   1      } 
+ 170          
+ 171          
+ 172          /*--------------------------------------  
+ 173          ;模块名称:LCD_disp_char();  
+ 174          ;功    能:LCD1602显示一个字符函数，在某个屏幕位置上显示一个字符 ,X（0-15),y(1-2)。 
+ 175          
+ 176          ;-------------------------------------*/ 
+ 177          void LCD_disp_char(uchar x,uchar y,uchar dat) 
+ 178          { 
+ 179   1              uchar address; 
+C51 COMPILER V9.00   TEST                                                                  11/21/2012 15:21:51 PAGE 4   
+
+ 180   1              if(y==1) 
+ 181   1               address=0x80+x; 
+ 182   1              else 
+ 183   1               address=0xc0+x; 
+ 184   1              LCD_write_command(address); 
+ 185   1              LCD_write_data(dat); 
+ 186   1      } 
+ 187          
+ 188          
+ 189          
+ 190          /*--------------------------------------  
+ 191          ;模块名称:LCD_disp_str();  
+ 192          ;功    能:LCD1602显示字符串函数，在某个屏幕起始位置{X（0-15),y (1-2)}上显示一个字符串。 
+ 193          
+ 194          ;-------------------------------------*/ 
+ 195          void LCD_disp_str(uchar x,uchar y,uchar *str) 
+ 196          { 
+ 197   1              uchar address; 
+ 198   1              if(y==1) 
+ 199   1               address=0x80+x; 
+ 200   1              else 
+ 201   1               address=0xc0+x; 
+ 202   1              LCD_write_command(address); 
+ 203   1              while(*str!='\0') 
+ 204   1              {  
+ 205   2              LCD_write_data(*str);    
+ 206   2              str++; 
+ 207   2              } 
+ 208   1      } 
+ 209          
+ 210          
+ 211          /*--------------------------------------  
+ 212          ;模块名称:delay_n10us();  
+ 213          ;功    能:延时函数，延时约n个10us 
+ 214           
+ 215          ;-------------------------------------*/ 
+ 216          void delay_n10us(uint n) 
+ 217          {        
+ 218   1              uint i;            
+ 219   1              for(i=n;i>0;i--) 
+ 220   1              { 
+ 221   2              _nop_();_nop_();_nop_();_nop_();_nop_();_nop_(); //延时10us@12M晶振 
+ 222   2      } 
+ 223   1      }                                     
+ 224          
+ 225          //*********************第一部分LCD1602设置  //END**************************************** 
+ 226          
+ 227          
+ 228          //*********主函数***************** 
+ 229          void main(void) 
+ 230          { 
+ 231   1          LCD_init(); 
+ 232   1          LCD_disp_str(0,1,"VOL:     RES:   "); 
+ 233   1              LCD_disp_str(0,2,"FQR:     SOU:   ");   
+ 234   1          delay_n10us(200);     //延时0.2s 
+ 235   1          while(1)  
+ 236   1          { 
+ 237   2                      ReadTemperature();
+ 238   2                      LCD_disp_char(1,1,disp[0]); 
+ 239   2                              LCD_disp_char(2,1,disp[1]); 
+ 240   2                                      LCD_disp_char(3,1,disp[2]); 
+ 241   2                                              LCD_disp_char(4,1,disp[3]); 
+C51 COMPILER V9.00   TEST                                                                  11/21/2012 15:21:51 PAGE 5   
+
+ 242   2          }
+ 243   1      } 
+ 244          
+ 245          
+ 246          
+ 247          
+*** WARNING C290 IN LINE 35 OF TEST.C: missing return value
+*** WARNING C290 IN LINE 65 OF TEST.C: missing return value
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    545    ----
+   CONSTANT SIZE    =     34    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      6       8
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  2 WARNING(S),  0 ERROR(S)
